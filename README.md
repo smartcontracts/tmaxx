@@ -93,6 +93,49 @@ tmaxx chat probe --target codex1:1.1
 
 That sends a nonce, finds it in the durable logs, and binds the pane honestly.
 
+### Manager Claude And `/loop`
+
+When Codex already has a clear assignment, I usually keep Claude in manager
+mode and let Claude run `/loop`.
+
+The point of `/loop` is not to make Claude do the work. The point is to keep
+Codex operating through the failure modes it predictably has:
+
+- analysis paralysis instead of execution
+- permission-seeking instead of taking the obvious next step
+- getting stuck on one error for too long
+- whack-a-mole fixes instead of fixing the bug class
+- background-terminal weirdness where it looks busy but is not actually moving
+- context compaction or drift where it loses the immediate thread
+
+The basic manager loop is:
+
+1. inspect the worker pane
+2. read the visible pane or recent transcript
+3. decide whether Codex is making real progress
+4. if not, send a short corrective message and keep the assignment tight
+
+Typical manager-side commands inside that loop:
+
+```bash
+tmaxx pane inspect --target codex1:1.1
+tmaxx pane read --target codex1:1.1 | tail -20
+tmaxx chat tail --target codex1:1.1 --limit 6
+tmaxx send --to codex1:1.1 --from claude3 --body "Stop analyzing. Execute the fix and report the result."
+```
+
+I use `/loop` when the plan is already clear and the risk is mostly execution
+drift, not planning quality. If the worker still needs actual problem framing,
+I do that first and only then drop into the supervision loop.
+
+The important part is that Claude stays brief and operational. It should not
+spam the worker. It should only intervene when one of the common failure modes
+shows up or when the worker needs a precise shove back onto the assignment.
+
+There is also a cleaned-up manager skill in
+[skills/codex-manager/SKILL.md](/home/k/work/tmaxx/skills/codex-manager/SKILL.md)
+that captures this pattern in a more reusable form.
+
 ## Commands
 
 ```bash
