@@ -1,0 +1,24 @@
+{
+  "name": "tmaxx",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "description": "Tmux transport and transcript bridge for existing agent panes.",
+  "bin": {
+    "tmaxx": "./bin/tmaxx.cjs"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "src",
+    "README.md",
+    "package.json"
+  ],
+  "scripts": {
+    "test": "bun test",
+    "start": "bun run src/cli/tmaxx.ts",
+    "build:bin": "mkdir -p dist && bun build --compile --outfile dist/tmaxx src/cli/tmaxx.ts",
+    "prepare": "node ./scripts/ensure-packaged-binary.cjs",
+    "prepack": "bun run build:bin"
+  }
+}
