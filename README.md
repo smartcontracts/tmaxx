@@ -23,7 +23,7 @@ The pattern is simple:
 - Claude watches the worker pane
 - Claude sends work into the worker pane
 - Claude reads either the visible pane or the durable transcript
-- Codex does the work and replies in its own normal chat flow
+- Codex replies back through its own normal chat flow, and agent-to-agent replies can also come back through `tmaxx`
 
 I am not trying to build a protocol empire here. I just want a reliable way for
 one agent to talk to another through tmux without fumbling raw `send-keys`.
@@ -49,10 +49,12 @@ Claude is the supervisor. Codex is the hands.
 Typical commands:
 
 ```bash
+tmaxx pane self
+tmaxx pane list
 tmaxx pane inspect --target codex1:1.1
 tmaxx pane read --target codex1:1.1
 tmaxx chat tail --target codex1:1.1 --limit 5
-tmaxx send --to codex1:1.1 --from claude3 --body "check the failing compiler tests and fix the root cause"
+tmaxx send --to codex1:1.1 --body "check the failing compiler tests and fix the root cause"
 ```
 
 That is basically it.
@@ -121,7 +123,7 @@ Typical manager-side commands inside that loop:
 tmaxx pane inspect --target codex1:1.1
 tmaxx pane read --target codex1:1.1 | tail -20
 tmaxx chat tail --target codex1:1.1 --limit 6
-tmaxx send --to codex1:1.1 --from claude3 --body "Stop analyzing. Execute the fix and report the result."
+tmaxx send --to codex1:1.1 --body "Stop analyzing. Execute the fix and report the result."
 ```
 
 I use `/loop` when the plan is already clear and the risk is mostly execution
@@ -140,11 +142,14 @@ that captures this pattern in a more reusable form.
 
 ```bash
 tmaxx send --to worker:1.1 --body "check the failing test"
-tmaxx send --to worker:1.1 --from claude3 --body "check the failing test"
+tmaxx send --to worker:1.1 --from claude3:1.1 --body "check the failing test"
+tmaxx send --to worker:1.1 --body-file ./message.txt
 tmaxx send --to worker:1.1 --anonymous --body "check the failing test"
-tmaxx pane read --target worker:1.1
+tmaxx pane self
+tmaxx pane list
+tmaxx pane read --self
 tmaxx pane inspect --target worker:1.1
-tmaxx chat resolve --target worker:1.1
+tmaxx chat resolve --self
 tmaxx chat read --target worker:1.1 --role assistant --limit 10
 tmaxx chat tail --target worker:1.1 --limit 5
 tmaxx chat read --provider claude --session 7b1654f3-dc8e-4b36-b203-df8fca16679d
@@ -152,9 +157,12 @@ tmaxx chat probe --target worker:1.1
 ```
 
 `send` uses a standard message envelope by default so agent messages can carry
-`message_id`, `from`, `to`, `sent_at`, and `body`.
+`message_id`, `from`, `to`, `sent_at`, and `body`. If `--from` is omitted, `tmaxx`
+first tries to use the current pane target automatically, then falls back to
+`TMAXX_SENDER` or the local user identity when it is not running inside tmux.
 
 Use `--anonymous` when you want the message to look like ordinary human input.
+Use `--body-file` for multiline messages when shell quoting would be annoying.
 
 When transcript resolution works, `send` also checks the durable chat log for a
 better receipt instead of relying only on pane heuristics.
