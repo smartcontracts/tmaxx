@@ -25,6 +25,16 @@ describe("tmux inspection heuristics", () => {
   test("detects visible working state from tail lines", () => {
     const text = ["line 1", "line 2", "Working (12s)", "tail"].join("\n");
     expect(paneIsWorking(text)).toBe(true);
+    const waitingText = [
+      "• previous step output",
+      "◦ Waiting for background terminal (2m 01s • esc to interrupt) · 2 background terminals running · /ps to view · /st…",
+      "  └ cargo test -p eth-con-node",
+      "› Use /skills to list available skills",
+      "  gpt-5.5 xhigh fast · ~/work/projects/ethql",
+    ].join("\n");
+    expect(paneIsWorking(waitingText)).toBe(true);
+    const idleText = ["• Worked for 1m 31s ───", "› Use /skills to list available skills"].join("\n");
+    expect(paneIsWorking(idleText)).toBe(false);
   });
 
   test("detects pasted content buffer", () => {

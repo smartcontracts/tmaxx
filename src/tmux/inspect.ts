@@ -36,8 +36,8 @@ export function paneIsWorking(paneText: string): boolean {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-  const tail = lines.slice(-5);
-  return tail.some((line) => line.includes("Working ("));
+  const tail = lines.slice(-8);
+  return tail.some((line) => line.includes("Working (") || /esc to interrupt/i.test(line));
 }
 
 export function paneHasPastedContent(paneText: string): boolean {
